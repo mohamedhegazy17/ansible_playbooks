@@ -5,32 +5,11 @@
     - vars/default.yml
 
   tasks:
-    - name: latest version of httpd and firewalld installed
-      ansible.builtin.yum:
-        name:
-            - httpd
-        state: latest
-    - name: Create document root
-      file:
-        path: "/var/www/html/{{ http_host }}"
-        state: directory
-        owner: "{{ app_user }}"
-        mode: '0755'
-
-    - name: Copy index test page
-      template:
-        src: "files/index.html.j2"
-        dest: "/var/www/html/{{ http_host }}/index.html"
-        
-    - name: firewalld permits http service
-      ansible.posix.firewalld:
-        service: http
-        permanent: true
-        state: enabled
-        immediate: true
-    
-    - name: httpd enabled and running
-      ansible.builtin.service:
-        name: httpd
-        enabled: true
-        state: started
+    - name: Copy shell script to remote server
+      ansible.builtin.template:
+        src: "files/agent.j2"
+        dest: "/tmp/agent.sh"
+      
+    - name: Run shell script on remote server
+      ansible.builtin.shell:
+        shell: sh /tmp/agent.sh
