@@ -5,20 +5,20 @@
     - vars/default.yml
 
   tasks:
-    - name: latest version of httpd and firewalld installed
+    - name: latest version of httpd installed
       ansible.builtin.yum:
         name:
             - httpd
         state: latest
     - name: Create document root
-      file:
+      ansible.builtin.file:
         path: "/var/www/html/{{ http_host }}"
         state: directory
         owner: "{{ app_user }}"
         mode: '0755'
 
     - name: Copy index test page
-      template:
+      ansible.builtin.template:
         src: "files/index.html.j2"
         dest: "/var/www/html/{{ http_host }}/index.html"
         
