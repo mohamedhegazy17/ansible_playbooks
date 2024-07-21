@@ -2,7 +2,7 @@
 - name: Install MSSQL on Windows VM
   hosts: all
   tasks:
-    - name: Ensure Temp Directory Exists
+    - name: create Temp Directory 
       ansible.windows.win_command: mkdir C:\Temp
       args:
         creates: C:\Temp
@@ -12,7 +12,7 @@
       args:
         creates: C:\Temp\SQLEXPR_x64_ENU.exe
 
-    - name: Run MSSQL installer
+    - name: Run MSSQL installer script
       ansible.windows.win_command: |
         C:\Temp\SQLEXPR_x64_ENU.exe /Q /ACTION=Install /INSTANCENAME=MSSQLSERVER /FEATURES=SQLENGINE /UPDATEENABLED=1 /SQLSVCACCOUNT="NT AUTHORITY\NETWORK SERVICE" /SQLSYSADMINACCOUNTS="BUILTIN\ADMINISTRATORS" /IACCEPTSQLSERVERLICENSETERMS
       args:
