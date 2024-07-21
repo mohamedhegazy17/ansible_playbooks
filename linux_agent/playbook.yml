@@ -13,3 +13,8 @@
     - name: Run shell script on remote server
       ansible.builtin.shell:
         shell: sh /tmp/agent.sh
+<<<<<<< HEAD
+=======
+        
+    
+>>>>>>> 6e34adf (last update)

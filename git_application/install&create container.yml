@@ -1,0 +1,56 @@
+---
+- hosts: localhost
+  vars_files:
+    - vars/default.yml
+  tasks:
+          - name: Check  Container exist
+            containers.podman.podman_container:
+                name: "{{ old_container_name }}"
+                image: "{{ image }}"
+                state: stopped
+            register: stat
+            notify:
+              - Remove Container
+              - Recreate Container
+              - Mount Volumes
+          - name: Create Container
+            containers.podman.podman_container:
+                    name: "{{ new_container_name }}"
+                    image: "{{ image }}"
+                    state: started
+            register: stat2
+            when: stat.changed == "false"
+          - name: mount volumes
+            containers.podman.podman_container:
+                name: "{{ new_container_name }}"
+                image: "{{ image }}"
+                volumes:
+                      - "/tmp/test1/mom:/tmp/mon"
+            when: (stat.changed == "false") and (stat2.changed != "false")
+          - name: enable FW port 443 
+            ansible.builtin.firewalld:
+                port: 443/tcp
+                permanent: yes
+                state: enabled
+          - name: enable FW port 80 
+            ansible.builtin.firewalld:
+                port: 80/tcp
+                permanent: yes
+                state: enabled
+  handlers:
+          - name: Remove Container
+            containers.podman.podman_container:
+                    name:  "{{ old_container_name }}"
+                    state: absent
+                    rm: true
+          - name: Recreate Container
+            containers.podman.podman_container:
+                    name: "{{ new_container_name }}"
+                    image: "{{ image }}"
+                    state: started
+          - name: Mount Volumes
+            containers.podman.podman_container:
+                name: "{{ new_container_name }}"
+                image: "{{ image }}"
+                volumes:
+                      - "/tmp/test1/mom:/tmp/mon" 
