@@ -1,0 +1,66 @@
+---
+- name: Configure WSUS on Windows Server
+  hosts: all
+  tasks:
+    - name: Install WSUS role
+      win_feature:
+        name: UpdateServices,UpdateServices-DB,UpdateServices-RSAT
+        state: present
+
+    - name: Install SQL Server 2012 Native Client
+      win_get_url:
+        url: https://download.microsoft.com/download/9/2/D/92D5B555-4261-4F69-B8D1-83C803B87CDA/sqlncli.msi
+        dest: C:\Temp\sqlncli.msi
+
+    - name: Install SQL Server 2012 Native Client MSI
+      win_package:
+        path: C:\Temp\sqlncli.msi
+        state: present
+
+    - name: Perform initial WSUS configuration
+      win_command: |
+        & "C:\Program Files\Update Services\Tools\wsusutil.exe" postinstall CONTENT_DIR=C:\WSUS SQL_INSTANCE_NAME=<SQL_INSTANCE_NAME>
+      args:
+        creates: 'C:\WSUS\WsusContent'
+        
+    - name: Configure WSUS server settings
+      win_shell: |
+        $wsus = Get-WsusServer
+        $config = $wsus.GetConfiguration()
+        $config.SyncFromMicrosoftUpdate = $true
+        $config.Save()
+
+    - name: Configure WSUS update languages
+      win_shell: |
+        $wsus = Get-WsusServer
+        $config = $wsus.GetConfiguration()
+        $config.AllowedInstallationLanguages = @("en")
+        $config.Save()
+
+    - name: Configure WSUS update classifications
+      win_shell: |
+        $wsus = Get-WsusServer
+        $classifications = $wsus.GetUpdateClassifications()
+        $critical = $classifications | Where-Object {$_.Title -eq "Critical Updates"}
+        $security = $classifications | Where-Object {$_.Title -eq "Security Updates"}
+        $wsus.SetUpdateClassifications(@($critical, $security))
+
+    - name: Schedule WSUS synchronization
+      win_scheduled_task:
+        name: WSUS_Sync
+        description: "WSUS synchronization task"
+        actions:
+          - path: "C:\Program Files\Update Services\Tools\wsusutil.exe"
+            arguments: "sync"
+        triggers:
+          - type: daily
+            start_boundary: '2024-07-21T02:00:00'
+            enabled: true
+
+    - name: Approve updates automatically
+      win_shell: |
+        $wsus = Get-WsusServer
+        $updates = $wsus.GetUpdates() | Where-Object { $_.ApprovalState -eq "NotApproved" }
+        foreach ($update in $updates) {
+          $update.Approve('Install')
+        }
