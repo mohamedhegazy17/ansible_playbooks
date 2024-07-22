@@ -1,0 +1,40 @@
+---
+- name: Manage VLAN on Nutanix Subnet
+  hosts: prism_central
+  gather_facts: false
+  collections:
+    - nutanix.ncp
+  vars:
+    prism_host: "{{ ansible_host }}"
+    prism_user: "{{ ansible_user }}"
+    prism_pass: "{{ ansible_password }}"
+    vlan_name: "VLAN-100"
+    vlan_id: 100
+    subnet_name: "Subnet-100"
+    subnet_vlan_id: 100
+    subnet_cidr: "192.168.100.0/24"
+    subnet_gateway: "192.168.100.1"
+  tasks:
+    - name: Check if VLAN exists
+      nutanix.ncp_subnet_info:
+        prism_host: "{{ prism_host }}"
+        prism_user: "{{ prism_user }}"
+        prism_password: "{{ prism_pass }}"
+      register: subnet_info
+
+    - name: Check if VLAN is tagged on the subnet
+      ansible.builtin.set_fact:
+        vlan_tagged: "{{ item.vlan_id == vlan_id }}"
+      loop: "{{ subnet_info.subnets }}"
+      when: item.name == subnet_name
+
+    - name: Add VLAN as subnet if not tagged
+      nutanix.ncp_subnet:
+        prism_host: "{{ prism_host }}"
+        prism_user: "{{ prism_user }}"
+        prism_password: "{{ prism_pass }}"
+        name: "{{ subnet_name }}"
+        vlan_id: "{{ subnet_vlan_id }}"
+        cidr: "{{ subnet_cidr }}"
+        gateway: "{{ subnet_gateway }}"
+      when: vlan_tagged is not defined or vlan_tagged == false
