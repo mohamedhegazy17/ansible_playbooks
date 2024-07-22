@@ -1,0 +1,12 @@
+---
+- name: Run a agent on AIX
+  hosts: all
+  tasks:
+    - name: Copy the script to the AIX node
+      ansible.builtin.copy:
+        src: /path/to/local/script.sh
+        dest: /path/to/remote/script.sh
+        mode: '0755'
+
+    - name: Execute the script on AIX
+      ansible.builtin.shell: /path/to/remote/script.sh
