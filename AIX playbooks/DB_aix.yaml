@@ -1,0 +1,30 @@
+---
+- name: Install and Configure MySQL on AIX
+  hosts: aix
+  gather_facts: false
+  tasks:
+    - name: Ensure MySQL package is present
+      raw: |
+        if ! lslpp -L | grep -q 'mysql'; then
+          installp -acgXY /path/to/mysql.bff
+        fi
+
+    - name: Create MySQL data directory
+      file:
+        path: /usr/local/mysql/data
+        state: directory
+        mode: '0755'
+
+    - name: Copy MySQL configuration file
+      copy:
+        src: /path/to/local/my.cnf
+        dest: /etc/my.cnf
+        mode: '0644'
+
+    - name: Initialize MySQL data directory
+      shell: |
+        /usr/local/mysql/bin/mysqld --initialize --user=mysql --datadir=/usr/local/mysql/data
+
+    - name: Start MySQL service
+      shell: |
+        startsrc -s mysqld
