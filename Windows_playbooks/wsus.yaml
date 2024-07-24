@@ -1,29 +1,28 @@
 ---
-- name: Configure WSUS on Windows Server
-  hosts: all
+- name: Install and configure WSUS on Windows Server
+  hosts: windows
   tasks:
-    - name: Install WSUS role
+    - name: Install WSUS role and features
       win_feature:
-        name: UpdateServices,UpdateServices-DB,UpdateServices-RSAT
+        name: 
+          - UpdateServices
+          - UpdateServices-DB
+          - UpdateServices-RSAT
         state: present
+        include_management_tools: yes
 
-    - name: Install SQL Server 2012 Native Client
-      win_get_url:
-        url: https://download.microsoft.com/download/9/2/D/92D5B555-4261-4F69-B8D1-83C803B87CDA/sqlncli.msi
-        dest: C:\Temp\sqlncli.msi
+    - name: Ensure WSUS Content directory exists
+      win_file:
+        path: C:\WSUS
+        state: directory
 
-    - name: Install SQL Server 2012 Native Client MSI
-      win_package:
-        path: C:\Temp\sqlncli.msi
-        state: present
-
-    - name: Perform initial WSUS configuration
+    - name: Perform initial WSUS post-installation
       win_command: |
-        & "C:\Program Files\Update Services\Tools\wsusutil.exe" postinstall CONTENT_DIR=C:\WSUS SQL_INSTANCE_NAME=<SQL_INSTANCE_NAME>
+        C:\Program Files\Update Services\Tools\wsusutil.exe postinstall CONTENT_DIR=C:\WSUS
       args:
         creates: 'C:\WSUS\WsusContent'
         
-    - name: Configure WSUS server settings
+    - name: Configure WSUS to sync from Microsoft Update
       win_shell: |
         $wsus = Get-WsusServer
         $config = $wsus.GetConfiguration()
@@ -55,7 +54,7 @@
         triggers:
           - type: daily
             start_boundary: '2024-07-21T02:00:00'
-            enabled: true
+            enabled: yes
 
     - name: Approve updates automatically
       win_shell: |
